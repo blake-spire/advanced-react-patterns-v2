@@ -99,7 +99,7 @@ class Toggle extends React.Component {
   })
   getStateAndHelpers() {
     return {
-      ...this.getState(),
+      ...this.getState().on,
       toggle: this.toggle,
       reset: this.reset,
       getTogglerProps: this.getTogglerProps,
