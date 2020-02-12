@@ -1,15 +1,24 @@
 import React from 'react'
-// import hoistNonReactStatics from 'hoist-non-react-statics'
+import hoistNonReactStatics from 'hoist-non-react-statics'
 import * as redux from 'redux'
 import {Switch} from '../switch'
 
+const RenduxContext = React.createContext({
+  state: {},
+  reset: () => {},
+  dispatch: () => {},
+})
+
 class Rendux extends React.Component {
+  static Consumer = RenduxContext.Consumer
+
   // I'll give you some of this because it's kinda redux-specific stuff
   static defaultProps = {
     initialState: {},
     reducer: state => state,
   }
   initialReduxState = this.props.initialState
+
   rootReducer = (state, action) => {
     if (action.type === '__RENDUX_RESET__') {
       return this.initialReduxState
@@ -22,6 +31,14 @@ class Rendux extends React.Component {
       type: '__RENDUX_RESET__',
     })
   }
+
+  initialState = {
+    state: this.props.initialState,
+    dispatch: this.store.dispatch,
+    reset: this.reset,
+  }
+  state = this.initialState
+
   componentDidMount() {
     this.unsubscribe = this.store.subscribe(() =>
       this.setState({
@@ -32,15 +49,34 @@ class Rendux extends React.Component {
   componentWillUnmount() {
     this.unsubscribe()
   }
+
   render() {
-    // this is your job!
-    return 'todo'
+    const {children} = this.props
+
+    return (
+      <RenduxContext.Provider value={this.state}>
+        {typeof children === 'function'
+          ? children(this.state)
+          : children}
+      </RenduxContext.Provider>
+    )
   }
 }
 
-function withRendux() {
-  // this is your job too!
-  return () => null
+function withRendux(Component) {
+  const Wrapper = React.forwardRef((props, ref) => {
+    return (
+      <Rendux.Consumer>
+        {rendux => <Component ref={ref} {...props} rendux={rendux} />}
+      </Rendux.Consumer>
+    )
+  })
+
+  Wrapper.displayName = `withRendux(${Component.displayName ||
+    Component.name})`
+
+  hoistNonReactStatics(Wrapper, Component)
+  return Wrapper
 }
 
 /////////////////////////////////////////////////////////
